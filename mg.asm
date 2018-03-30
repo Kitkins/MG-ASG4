@@ -18,9 +18,10 @@ main:
     int 10h
 
 initVal:
-    mov ah, 00h				; get system time 
-    int 1Ah					; and it would be keep in cx:dx	
+    ;mov ah, 2Ch				; get system time 
+    ;int 21h					; ch = hour, cl = min, dh = sec , dl = 1/sec
 
+	
 stayChar:
 	call randChar
 	
@@ -53,7 +54,7 @@ rain:
 	jmp @nextRain
 	
 	minus_nLife:
-	dec nLife
+	;dec nLife
 	cmp nLife,'0'
 	jl @dumbJMP
 	
@@ -127,13 +128,18 @@ setColumnValue:
 	ret                 
 	
 randChar:
-	mov ax, seed			; keep seed from the last seed of each random function
-	add seed, 35			; and add it by appropriate value that make random char is not too close in ascii order
+	mov ah, 2Ch				; get system time 
+    int 21h					; ch = hour, cl = min, dh = sec , dl = 1/sec
+	mov ax, dx			
+	add ax, seed			
 	
-	xor dx, dx				; set dx to default
-	mov cx, 94		
-	div cx              	; divide ax(kept seed) by cx(range 33-126) and keep remainder to dx
-	add dl, '!'        	 	; make begining value to random
+	xor cx, cx				
+	xor dx, dx
+	mov cl, 94		
+	sub cl, '!'
+	
+	div cx              	
+	add dl, '!'
 	
 	mov ax,dx				; keep dx(random value) to ax(using to print char) 	
 	mov seed,ax				; keep ax to seed for using to be init value in the next random function
@@ -144,13 +150,18 @@ randChar:
 	ret
 
 randCol:
-	mov ax, seed			; keep seed value from 'init function' to ax in the first time
-	add seed, 50			; and the next time, using seed from the last seed of each random function
+	mov ah, 2Ch				; get system time 
+    int 21h					; ch = hour, cl = min, dh = sec , dl = 1/sec
+	mov ax, dx			
+	add ax, seed			
 	
-	xor dx, dx				; set dx to default
-	mov cx, 70		
-	div cx              	; divide ax(kept seed) by cx(range 0-79) and keep remainder to dx
-	add dl, 10				; random 0-80
+	xor cx, cx				
+	xor dx, dx
+	mov cl, 70		
+	sub cl, 10
+	
+	div cx              	
+	add dl, 10				
 	
 	mov bx, dx
 	;call delayF
