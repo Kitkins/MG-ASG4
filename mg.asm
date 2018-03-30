@@ -5,9 +5,32 @@ tempChar 	db 80 dup(0)
 temp 		dw ?       
 delayCount 	dw ?
 seed 		dw ?
-nScore		db 0
 nLife		db '9'
 tempRow		db ?
+
+lifeMSG	db "Life : $",0
+str1 db " _____ _                            _        _       $"
+str2 db "|_   _| |                          | |      (_)      $"
+str3 db "  | | | |__   ___   _ __ ___   __ _| |_ _ __ _ __  __ $"
+str4 db "  | | | '_ \ / _ \ | '_ ` _ \ / _` | __| '__| |\ \/ / $"
+str5 db "  | | | | | |  __/ | | | | | | (_| | |_| |  | | >  <  $"
+str6 db "  \_/ |_| |_|\___| |_| |_| |_|\__,_|\__|_|  |_|/_/\_\ $",0 
+
+str7 db "select level(hold number1-3)$",0
+str8 db "1.easy $",0
+str9 db "2.medium $",0
+str10 db "3.hard $",0
+
+str11 db "  ________                        ________                     $"
+str12 db " /  _____/_____    _____   ____   \_____  \___  __ ___________ $"
+str13 db "/   \  ___\__  \  /     \_/ __ \   /   |   \  \/ // __ \_  __ \$"
+str14 db "\    \_\  \/ __ \|  Y Y  \  ___/  /    |    \   /\  ___/|  | \/$"
+str15 db " \______  (____  /__|_|  /\___  > \_______  /\_/  \___  >__|   $"
+str16 db "        \/     \/      \/     \/          \/          \/       $",0 
+str17 db ">>> Press any key to exit <<<$",0 
+
+
+;key db ?
 
     .code
     org 0100h           ; for creating .com file
@@ -16,11 +39,50 @@ main:
     mov ah, 00h         ; Set video mode
     mov al, 03h         ; desired video mode
     int 10h
+	
+	call printstart
 
-initVal:
-    ;mov ah, 2Ch				; get system time 
-    ;int 21h					; ch = hour, cl = min, dh = sec , dl = 1/sec
+waitz:       
+	call getKB
+	
+	cmp al,'1'
+	je @delayEasy 
+	cmp al,'2'
+	je @delayMedium
+	cmp al,'3'
+	je @delayHard
+	
+	call clearBuff
+	call hideBlink
+	
+	jmp waitz
 
+@delayEasy:
+	call clearScreen
+	call printlifeMSG
+	mov delayCount,12000
+	jmp stayChar
+	
+@delayMedium:
+	call clearScreen
+	call printlifeMSG
+	mov delayCount,8000
+	jmp stayChar
+	
+@delayHard:
+	call clearScreen
+	call printlifeMSG
+	mov delayCount,4000
+	jmp stayChar
+
+clearScreen:
+	mov   ah, 6h
+	mov   al, 0h       ; clear whole screen
+	mov   bh, 7h
+	mov   cx, 0h
+	mov   dx, 184fh
+	int   10h
+	ret
 	
 stayChar:
 	call randChar
@@ -29,7 +91,6 @@ beginRain:
 	call setColumnValue
 	xor bx, bx
 	call checkToPrint
-	mov delayCount,5000
 	call delayF
 	
 	xor ax, ax
@@ -37,7 +98,7 @@ beginRain:
 	call deleteChecker
 	call clearBuff
 	call print_nLife
-	
+	call hideBlink
 	jmp beginRain
 
 rain:
@@ -54,7 +115,8 @@ rain:
 	jmp @nextRain
 	
 	minus_nLife:
-	;dec nLife
+	call print_nLife
+	dec nLife
 	cmp nLife,'0'
 	jl @dumbJMP
 	
@@ -91,7 +153,7 @@ rain:
 	mov al, ' '   
 	mov bl, 00h 
 	call printChar
-	
+
 	mov bx, temp
 	add row[bx], 8
 	cmp row[bx], 35 	; Discard characters junk, 50 is screen position
@@ -105,7 +167,7 @@ return:
 	ret
 
 @dumbJMP:
-	jmp doExit
+	jmp @dumbJMP2
 	
 plusplus:
 	inc bx
@@ -174,15 +236,15 @@ printChar:
 	ret
 
 delayF:
-							; Delay function 
+	mov si, delayCount						; Delay function 
 	mov cx, 1500
 delay:
 	nop
 	dec cx
 	loop delay
 	mov cx, 50
-	dec delayCount
-	cmp delayCount, 0
+	dec si
+	cmp si, 0
 	jne delay
 	ret 
 
@@ -219,7 +281,7 @@ deleteChecker:
 		cmp al,tempChar[bx]
 		je setToNull
 		cmp al, 27				; check press ESC?
-		je doExit
+		je @dumbJMP2
 		@nextDeleteChecker:
 		inc bx
 		cmp bx, 70
@@ -234,18 +296,6 @@ setToNull:
 getKB:
 	mov ah,01h
 	int 16h
-	
-	mov ah, 2h
-	mov dh, 0
-	mov dl, 79
-	int 10h
-	
-	mov ah, 09h     	; Show a Char
-	mov bh, 0h
-	mov bl, 4h
-	mov cx, 1			; times for showing
-	int 10h
-	
 	ret
 	
 clearBuff:
@@ -253,7 +303,229 @@ clearBuff:
 	int 21h
 	ret
 
-doExit:
-	int 20h
+@dumbJMP2:
+	jmp doExit
 	
+printstart:              ;need al as char ascii parameter
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,4
+	mov dl,12
+	int 10h
+
+	mov ah, 09h 
+    mov dx, offset str1
+    int 21h
+
+
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,5
+	mov dl,12
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str2
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,6
+	mov dl,12
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str3
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,7
+	mov dl,12
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str4
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,8
+	mov dl,12
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str5
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,9
+	mov dl,12
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str6
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,15
+	mov dl,22
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str7
+    int 21h  
+    
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,17
+	mov dl,22
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str8
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,19
+	mov dl,22
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str9
+    int 21h
+    mov ah,02h
+    mov bl,0Ch
+	mov bh,00h
+	mov dh,21
+	mov dl,22
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str10
+    int 21h   
+    
+    mov ah,02h
+    mov bl,0Ch 
+	mov bh,00h
+	mov dh,22
+	mov dl,22
+	int 10h
+
+	ret
+
+doExit:
+	call clearScreen
+	call printending
+	int 20h
+
+printending:
+	mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,8
+	mov dl,8
+	int 10h
+
+	mov ah, 09h 
+    mov dx, offset str11
+    int 21h
+
+
+    mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,9
+	mov dl,8
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str12
+    int 21h
+    mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,10
+	mov dl,8
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str13
+    int 21h
+    mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,11
+	mov dl,8
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str14
+    int 21h
+    mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,12
+	mov dl,8
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str15
+    int 21h
+    mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,13
+	mov dl,8
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str16
+    int 21h
+	
+	mov ah,02h
+    mov bl,0Bh
+	mov bh,00h
+	mov dh,20
+	mov dl,25
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset str17
+    int 21h
+	
+	call clearBuff
+	
+	waitPress:
+	mov ah, 0Bh         ; Press any key to exit
+	int 21h
+	cmp al, 00h
+	jz waitPress
+	
+	ret
+
+hideBlink:
+	mov ch, 32
+    mov ah, 1
+    int 10h
+	ret
+
+printlifeMSG:
+	mov ah,02h
+    mov bl,0Fh
+	mov bh,00h
+	mov dh,24
+	mov dl,72
+	int 10h
+
+	mov ah, 09h
+    mov dx, offset lifeMSG
+    int 21h
+	ret
     end main
